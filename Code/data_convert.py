@@ -2,7 +2,7 @@ import os
 from PIL import Image
 
 # Chemin du dossier contenant les images d'origine
-dossier_source = "/Users/adeleimparato/Documents/Montpellier/UM/Semestre3/Image_Secu_DeepLearning/ProjetImage_M2/Code/img_celeb"
+dossier_source = "/Users/adeleimparato/Documents/Montpellier/UM/Semestre3/Image_Secu_DeepLearning/ProjetImage_M2/Code/img_align_celeba"
 
 # Chemin du dossier de destination pour les images converties
 dossier_destination = "/Users/adeleimparato/Documents/Montpellier/UM/Semestre3/Image_Secu_DeepLearning/ProjetImage_M2/Code/img_converted"
