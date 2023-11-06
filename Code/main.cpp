@@ -7,6 +7,7 @@
 #include <cfloat>
 #include <fstream>
 #include <sstream>
+#include <regex>
 
 struct DataFrame {
     std::vector<std::string> columns;
@@ -37,11 +38,16 @@ DataFrame readLines(const std::string& filename, int num_lines) {
         int lines_read = 0;
         while (std::getline(file, line) && lines_read < num_lines) {
             std::vector<std::string> row;
-            std::istringstream ss(line);
-            std::string cell;
 
-            while (std::getline(ss, cell, ' ')) {
+            // Utiliser une expression régulière pour diviser la ligne en fonction d'un ou plusieurs espaces
+            std::regex regex("\\s+");
+            std::sregex_token_iterator it(line.begin(), line.end(), regex, -1);
+            std::sregex_token_iterator end;
+
+            while (it != end) {
+                std::string cell = *it;
                 row.push_back(cell);
+                ++it;
             }
 
             df.data.push_back(row);
@@ -119,24 +125,25 @@ int main(int argc, char* argv[]){
 // --------------------------------------------------------------------------------------------
     if(method_key[0] == 'A'){ // methode 1 -> face swap
 
-        DataFrame df = readLines("list_attr_celeba.txt", 2);
-        std::cout << "Columns: ";
+        DataFrame df = readLines("list_attr_celeba.txt", 3);
+
+        std::cout << "Columns: " << std::endl;
         for (const std::string& col : df.columns) {
-            std::cout << col << "\t";
+            std::cout << col << ", ";
         }
         std::cout << std::endl;
 
         std::cout << "Data: " << std::endl;
         for (const std::vector<std::string>& row : df.data) {
             for (const std::string& cell : row) {
-                std::cout << cell << "\t";
+                std::cout << cell << ", ";
             }
             std::cout << std::endl;
         }
 
         // Search for a row based on the data in a specified column
         const std::string target_column = "index";
-        const std::string target_value = "000001.jpg";
+        const std::string target_value = "000003.jpg";
         std::vector<std::string> result = findRowByColumnValue(df, target_column, target_value);
 
         if (!result.empty()) {
@@ -148,6 +155,9 @@ int main(int argc, char* argv[]){
         } else {
             std::cout << "Row not found for value: " << target_value << " in column: " << target_column << std::endl;
         }
+
+        bool isMale = (result[21] == "1") ? true : false;
+        std::cout << "is male = " << isMale << std::endl;
 
 
 
