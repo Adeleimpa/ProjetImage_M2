@@ -212,26 +212,33 @@ std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> im
     size_t nbImages = imagesPossibles.size() ;
     size_t tailleDf = df.data.size() ;
     size_t nbColumns = df.data[0].size() ;
-    size_t tailleParam = ensembleParametres.size() ;
+    size_t tailleParam = ensembleParametres.size();
     std::vector<float> distances(nbImages);
+
     for(size_t i = 1 ; i<tailleDf ; i++){
         for(size_t j = 0 ; j<nbImages ; j++){
             if(df.data[i][0] == imagesPossibles[j]){
                 distances[j] = 0 ;
                 for(size_t k = 1 ; k<tailleParam ; k++){
                     distances[j] += (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])) * (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])); //distance euclidienne
+                    //std::cout<<df.data[i][k]<<std::endl ;
+                    //std::cout<<k<<std::endl ;
                 }
             }
         }
     }
+    
     for(size_t i = 0 ; i<nbImages ; i++){
         if(distances[i] < 10){ //images proches 
             meilleuresImages.push_back(imagesPossibles[i]);
         }
     }
-    int indice = rand() % meilleuresImages.size() ;
-    meilleuresImages = {meilleuresImages[indice]}; // On selectionne une image parmi les images proches
-    if(meilleuresImages.empty()){ // s'il n'y a aucune image proche
+    int indice ;
+    if(!meilleuresImages.empty()){
+        indice = rand() % meilleuresImages.size() ;
+        meilleuresImages = {meilleuresImages[indice]}; // On selectionne une image parmi les images proches
+    } 
+    else{ // s'il n'y a aucune image proche
         float minDist = FLT_MAX ; // recuperation de l'image la plus proche
         std::string imageOpti ;
         for(size_t i = 0 ; i<nbImages ; i++){
@@ -242,6 +249,7 @@ std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> im
         }
         meilleuresImages = {imageOpti} ;
     }
+    
     return meilleuresImages ;
 }
 
@@ -292,6 +300,7 @@ int main(int argc, char *argv[])
         int nHres, nWres, nTailleRes ;
 
         // on teste si ça colle en l'affichant
+        // TODO swap faces
         char *nomFichierRes = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
         lire_nb_lignes_colonnes_image_ppm(nomFichierRes, &nHres, &nWres);
         nTailleRes = nH * nW * 3;
