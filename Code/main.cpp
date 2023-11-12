@@ -9,20 +9,23 @@
 #include <sstream>
 #include <regex>
 
-struct DataFrame {
+struct DataFrame
+{
     std::vector<std::string> columns;
-    std::vector<std::vector<std::string> > data;
+    std::vector<std::vector<std::string>> data;
 };
 
-DataFrame readLines(const std::string& filename, int num_lines) {
+DataFrame readLines(const std::string &filename, int num_lines)
+{
     DataFrame df;
     std::ifstream file(filename);
 
-    if (file.is_open()) {
+    if (file.is_open())
+    {
         std::string line;
 
         // Lire la première ligne (noms de colonnes)
-        if (std::getline(file, line)) {
+        /*if (std::getline(file, line)) {
             std::istringstream ss(line);
             std::string cell;
 
@@ -33,52 +36,65 @@ DataFrame readLines(const std::string& filename, int num_lines) {
             std::cerr << "File is empty." << std::endl;
             return df;
         }
-
+        */
         // Lire les lignes de données suivantes
         int lines_read = 0;
-        while (std::getline(file, line) && lines_read < num_lines) {
-            std::vector<std::string> row;
+        while (std::getline(file, line) && lines_read < num_lines)
+        {
+            if (lines_read >= 1)
+            {
+                std::vector<std::string> row;
 
-            // Utiliser une expression régulière pour diviser la ligne en fonction d'un ou plusieurs espaces
-            std::regex regex("\\s+");
-            std::sregex_token_iterator it(line.begin(), line.end(), regex, -1);
-            std::sregex_token_iterator end;
+                // Utiliser une expression régulière pour diviser la ligne en fonction d'un ou plusieurs espaces
+                std::regex regex("\\s+");
+                std::sregex_token_iterator it(line.begin(), line.end(), regex, -1);
+                std::sregex_token_iterator end;
 
-            while (it != end) {
-                std::string cell = *it;
-                row.push_back(cell);
-                ++it;
+                while (it != end)
+                {
+                    std::string cell = *it;
+                    row.push_back(cell);
+                    ++it;
+                }
+
+                df.data.push_back(row);
             }
-
-            df.data.push_back(row);
             lines_read++;
         }
 
         file.close();
-    } else {
+    }
+    else
+    {
         std::cerr << "Unable to open the file." << std::endl;
     }
 
     return df;
 }
 
-std::vector<std::string> findRowByColumnValue(const DataFrame& df, const std::string& target_column, const std::string& target_value) {
+std::vector<std::string> findRowByColumnValue(const DataFrame &df, const std::string &target_column, const std::string &target_value)
+{
     std::vector<std::string> result;
 
     // Find the index of the target column
     int target_column_index = -1;
-    //std::cout <<"df.columns.size(); " << df.columns.size() << std::endl;
-    for (int i = 0; i < df.columns.size(); i++) {
-        if (df.columns[i] == target_column) {
+    // std::cout <<"df.columns.size(); " << df.columns.size() << std::endl;
+    for (int i = 0; i < df.columns.size(); i++)
+    {
+        if (df.columns[i] == target_column)
+        {
             target_column_index = i;
             break;
         }
     }
 
-    if (target_column_index != -1) {
+    if (target_column_index != -1)
+    {
         // Search for the target value in the specified column
-        for (const std::vector<std::string>& row : df.data) {
-            if (row.size() > target_column_index && row[target_column_index] == target_value) {
+        for (const std::vector<std::string> &row : df.data)
+        {
+            if (row.size() > target_column_index && row[target_column_index] == target_value)
+            {
                 result = row;
                 break;
             }
@@ -88,87 +104,209 @@ std::vector<std::string> findRowByColumnValue(const DataFrame& df, const std::st
     return result;
 }
 
+//retrouve le nom .pgm du fichier correspondant au fichier .jpg 
+//imageJPG : nom total (exemple : 000001.jpg)
+//extensionCible : "pgm" (pour l'instant)
+//dossier : chemin menant vers la base de donnees d'images pgm ("./.../")
+char *nomImageCorrespondante(const char *imageJPG, const char *extensionCible, const char *dossier)
+{
+    size_t longueur = strlen(imageJPG);
+    size_t longueurDossier = strlen(dossier);
+    size_t longueurNom = longueur - 3; // extension "jpg" : 3 caractères
+
+    // Allocation de la mémoire (de taille chemin + nom)
+    char *nomImage = (char *)malloc(longueurDossier + longueur);
+
+    if (nomImage != nullptr)
+    {
+        // Copier le dossier
+        strncpy(nomImage, dossier, longueurDossier);
+
+        // Copier le nom de l'image (sans l'extension)
+        strncat(nomImage, imageJPG, longueurNom);
+
+        // Ajouter l'extension cible
+        strcat(nomImage, extensionCible);
+    }
+    return nomImage;
+}
+
+//donne la valeur du dataframe pour l'image donnee et suivant la condition donnee
+int valeurSelonImage(DataFrame &df, std::string nomImage, std::string nomCondition){
+    size_t tailleDf = df.data.size() ;
+    size_t nbColumns = df.data[0].size(); //ATTENTION : il manque la colonne correspondant aux noms d'images
+    int valColumn = -1 ;
+    for(size_t i = 0 ; i<nbColumns ; i++){
+        if(df.data[0][i] == nomCondition){
+            valColumn = i+1 ; // on rajoute 1 pour compter cette colonne manquante
+            break;
+        }
+    }
+    if(valColumn == -1){
+        printf("Mauvaise condition donnee ! ");
+	    exit(EXIT_FAILURE);
+    }
+    int valLine = -1 ;
+    for(size_t i = 0 ; i<tailleDf ; i++){
+        if(df.data[i][0] == nomImage){
+            valLine = i ;
+            break;
+        }
+    }
+    if(valLine == -1){
+        printf("Mauvais nom d'image donne ! ");
+	    exit(EXIT_FAILURE);
+    }
+    return std::stoi(df.data[valLine][valColumn]); //string to integer a la position trouvee
+}
 
 
-int main(int argc, char* argv[]){
+//retrouve l'ensemble des images jpg suivant un label
+std::vector<std::string> imagesParLabel(const DataFrame &df, std::string nomCondition, int valeurCondition){
+    std::vector<std::string> images ;
+    size_t nbColumns = df.data[0].size() ;
+    size_t nbImages = df.data.size() ;
+    int val = -1 ;
+    for(size_t i = 0 ; i<nbColumns ; i++){
+        if(df.data[0][i] == nomCondition){
+            val = i+1 ;
+            break;
+        }
+    }
+    if(val == -1){
+        printf("Mauvaise condition donnee ! ");
+	    exit(EXIT_FAILURE);
+    }
+    else{
+        for(size_t i = 1 ; i < nbImages ; i++){
+            if(df.data[i][val] == std::to_string(valeurCondition)){
+                images.push_back(df.data[i][0]); //rajout des images
+            }
+        }
+    }
+    return images ;
+}
+
+//retrouve les parametres suivant une image donnee
+std::vector<std::string> parametresImage(DataFrame df, std::string nomImage){
+    size_t tailleDf = df.data.size() ;
+    int i = 0 ; 
+    while(i<tailleDf && df.data[i][0] != nomImage){
+        i++ ;
+    }
+    size_t nbColumns = df.data[i].size() ;
+    std::vector<std::string> parametres(nbColumns) ;
+    for(int j = 0 ; j < nbColumns ; j++){
+        parametres[j] = df.data[i][j] ;
+    }
+    return parametres ;
+}
+
+
+//retrouve une image proche suivant :
+//df : dataframe des donnees (list_landmarks_align_celeba.txt)
+//imagesPossibles : ensemble des images candidat
+//ensemblesParametre : donnees de l'image de depart (position des yeux, bouche, ...)
+std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> imagesPossibles, std::vector<std::string> ensembleParametres){
+    std::vector<std::string> meilleuresImages ;
+    size_t nbImages = imagesPossibles.size() ;
+    size_t tailleDf = df.data.size() ;
+    size_t nbColumns = df.data[0].size() ;
+    size_t tailleParam = ensembleParametres.size() ;
+    std::vector<float> distances(nbImages);
+    for(size_t i = 1 ; i<tailleDf ; i++){
+        for(size_t j = 0 ; j<nbImages ; j++){
+            if(df.data[i][0] == imagesPossibles[j]){
+                distances[j] = 0 ;
+                for(size_t k = 1 ; k<tailleParam ; k++){
+                    distances[j] += (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])) * (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])); //distance euclidienne
+                }
+            }
+        }
+    }
+    for(size_t i = 0 ; i<nbImages ; i++){
+        if(distances[i] < 10){ //images proches 
+            meilleuresImages.push_back(imagesPossibles[i]);
+        }
+    }
+    int indice = rand() % meilleuresImages.size() ;
+    meilleuresImages = {meilleuresImages[indice]}; //On selectionne une image parmi les images proches
+    if(meilleuresImages.empty()){ //s'il n'y a aucune image proche
+        float minDist = FLT_MAX ; //recuperation de l'image la plus proche
+        std::string imageOpti ;
+        for(size_t i = 0 ; i<nbImages ; i++){
+            if(distances[i]<minDist){
+                minDist = distances[i] ;
+                imageOpti = imagesPossibles[i] ;
+            }
+        }
+        meilleuresImages = {imageOpti} ;
+    }
+    return meilleuresImages ;
+}
+
+int main(int argc, char *argv[])
+{
     srand(time(NULL));
 
     char method_key[250];
 
-	char name_img_1[250], name_img_2[250], name_img_out[250];
-	int nH1, nW1, nTaille1;
-    int nH2, nW2, nTaille2;
+    char name_img_1[250], name_img_out[250];
 
-	if (argc != 5) {
+    if (argc != 4)
+    {
         printf(" wrong usage \n");
         exit(1);
     }
 
     sscanf(argv[1], "%s", method_key);
     sscanf(argv[2], "%s", name_img_1);
-    sscanf(argv[3], "%s", name_img_2);
-    sscanf(argv[4], "%s", name_img_out);
+    sscanf(argv[3], "%s", name_img_out);
 
-    OCTET *ImgIn1, *ImgIn2, *ImgOut;
+    // --------------------------------------------------------------------------------------------
+        if(method_key[0] == 'A'){ // methode 1 -> méthode simple
 
-    lire_nb_lignes_colonnes_image_ppm(name_img_1, &nH1, &nW1);
-    nTaille1 = nH1 * nW1 * 3;
+            DataFrame df = readLines("list_attr_celeba.txt", 10002);
+            DataFrame dfParametres = readLines("list_landmarks_align_celeba.txt", 10002);
 
-    lire_nb_lignes_colonnes_image_ppm(name_img_2, &nH2, &nW2);
-    nTaille2 = nH2 * nW2 * 3;
+            //image jpg que l'on souhaite modifier
+            OCTET *img;
+            int nH, nW, nTaille;
 
-    allocation_tableau(ImgIn1, OCTET, nTaille1);
-    allocation_tableau(ImgIn2, OCTET, nTaille2);
-    allocation_tableau(ImgOut, OCTET, nTaille1);
+            char *nomFichier = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
+            lire_nb_lignes_colonnes_image_ppm(nomFichier, &nH, &nW);
+            nTaille = nH * nW * 3;
+            //VERIFICATION 
+            allocation_tableau(img, OCTET, nTaille);
+            lire_image_ppm(nomFichier, img, nH * nW);
+            ecrire_image_ppm((char *)"test1.ppm", img, nH, nW);
 
+            //valeur suivant le genre et le nom de l'image
+            int valeur = valeurSelonImage(df, std::string(name_img_1), "Male");
+            //on veut les images de genre opposé
+            std::vector<std::string> imgs = imagesParLabel(df, "Male", -valeur);
+            //position des elements du visage sur l'image d'entree
+            std::vector<std::string> parametres = parametresImage(dfParametres, std::string(name_img_1));
+            //images proches suivant ces paramtres
+            std::vector<std::string> imgProches = imagesProches(dfParametres, imgs, parametres);
+            int nHres, nWres, nTailleRes ;
+            //on teste si ça colle
+            char *nomFichierRes = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
+            lire_nb_lignes_colonnes_image_ppm(nomFichierRes, &nHres, &nWres);
+            nTailleRes = nH * nW * 3;
+            OCTET *imgOut ;
+            allocation_tableau(imgOut, OCTET, nTailleRes);
+            lire_image_ppm(nomFichierRes, imgOut, nHres * nWres);
+            ecrire_image_ppm(name_img_out, imgOut, nHres, nWres);
 
-// --------------------------------------------------------------------------------------------
-    if(method_key[0] == 'A'){ // methode 1 -> face swap
+            free(img);
+            free(imgOut)
 
-        DataFrame df = readLines("list_attr_celeba.txt", 3);
-
-        std::cout << "Columns: " << std::endl;
-        for (const std::string& col : df.columns) {
-            std::cout << col << ", ";
         }
-        std::cout << std::endl;
-
-        std::cout << "Data: " << std::endl;
-        for (const std::vector<std::string>& row : df.data) {
-            for (const std::string& cell : row) {
-                std::cout << cell << ", ";
-            }
-            std::cout << std::endl;
-        }
-
-        // Search for a row based on the data in a specified column
-        const std::string target_column = "index";
-        const std::string target_value = "000003.jpg";
-        std::vector<std::string> result = findRowByColumnValue(df, target_column, target_value);
-
-        if (!result.empty()) {
-            std::cout << "Row found: ";
-            for (const std::string& cell : result) {
-                std::cout << cell << "\t";
-            }
-            std::cout << std::endl;
-        } else {
-            std::cout << "Row not found for value: " << target_value << " in column: " << target_column << std::endl;
+    // --------------------------------------------------------------------------------------------
+        else{
+           printf("first argument is incorrect \n");
         }
 
-        bool isMale = (result[21] == "1") ? true : false;
-        std::cout << "is male = " << isMale << std::endl;
-
-
-
-    }
-// --------------------------------------------------------------------------------------------
-    else{
-       printf("first argument is incorrect \n"); 
-    }
-
-
-    free(ImgIn1); free(ImgIn2); free(ImgOut);
-
-	return 1;
+    return 1;
 }
