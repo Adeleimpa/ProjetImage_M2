@@ -11,4 +11,4 @@ cd <path>
 g++ -std=c++11 main.cpp -o run
 
 3. run
-./run A 000001.jpg 1_swap.ppm
+./run A 000001.jpg 1_inverse_gender.ppm 1_swap.ppm
