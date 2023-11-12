@@ -104,10 +104,10 @@ std::vector<std::string> findRowByColumnValue(const DataFrame &df, const std::st
     return result;
 }
 
-//retrouve le nom .pgm du fichier correspondant au fichier .jpg 
-//imageJPG : nom total (exemple : 000001.jpg)
-//extensionCible : "pgm" (pour l'instant)
-//dossier : chemin menant vers la base de donnees d'images pgm ("./.../")
+// retrouve le nom .pgm du fichier correspondant au fichier .jpg 
+// imageJPG : nom total (exemple : 000001.jpg)
+// extensionCible : "pgm" (pour l'instant)
+// dossier : chemin menant vers la base de donnees d'images pgm ("./.../")
 char *nomImageCorrespondante(const char *imageJPG, const char *extensionCible, const char *dossier)
 {
     size_t longueur = strlen(imageJPG);
@@ -131,7 +131,7 @@ char *nomImageCorrespondante(const char *imageJPG, const char *extensionCible, c
     return nomImage;
 }
 
-//donne la valeur du dataframe pour l'image donnee et suivant la condition donnee
+// donne la valeur du dataframe pour l'image donnee et suivant la condition donnee
 int valeurSelonImage(DataFrame &df, std::string nomImage, std::string nomCondition){
     size_t tailleDf = df.data.size() ;
     size_t nbColumns = df.data[0].size(); //ATTENTION : il manque la colonne correspondant aux noms d'images
@@ -161,7 +161,7 @@ int valeurSelonImage(DataFrame &df, std::string nomImage, std::string nomConditi
 }
 
 
-//retrouve l'ensemble des images jpg suivant un label
+// retrouve l'ensemble des images jpg suivant un label
 std::vector<std::string> imagesParLabel(const DataFrame &df, std::string nomCondition, int valeurCondition){
     std::vector<std::string> images ;
     size_t nbColumns = df.data[0].size() ;
@@ -187,7 +187,7 @@ std::vector<std::string> imagesParLabel(const DataFrame &df, std::string nomCond
     return images ;
 }
 
-//retrouve les parametres suivant une image donnee
+// retrouve les parametres suivant une image donnee
 std::vector<std::string> parametresImage(DataFrame df, std::string nomImage){
     size_t tailleDf = df.data.size() ;
     int i = 0 ; 
@@ -203,10 +203,10 @@ std::vector<std::string> parametresImage(DataFrame df, std::string nomImage){
 }
 
 
-//retrouve une image proche suivant :
-//df : dataframe des donnees (list_landmarks_align_celeba.txt)
-//imagesPossibles : ensemble des images candidat
-//ensemblesParametre : donnees de l'image de depart (position des yeux, bouche, ...)
+// retrouve une image proche suivant :
+// df : dataframe des donnees (list_landmarks_align_celeba.txt)
+// imagesPossibles : ensemble des images candidat
+// ensemblesParametre : donnees de l'image de depart (position des yeux, bouche, ...)
 std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> imagesPossibles, std::vector<std::string> ensembleParametres){
     std::vector<std::string> meilleuresImages ;
     size_t nbImages = imagesPossibles.size() ;
@@ -230,9 +230,9 @@ std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> im
         }
     }
     int indice = rand() % meilleuresImages.size() ;
-    meilleuresImages = {meilleuresImages[indice]}; //On selectionne une image parmi les images proches
-    if(meilleuresImages.empty()){ //s'il n'y a aucune image proche
-        float minDist = FLT_MAX ; //recuperation de l'image la plus proche
+    meilleuresImages = {meilleuresImages[indice]}; // On selectionne une image parmi les images proches
+    if(meilleuresImages.empty()){ // s'il n'y a aucune image proche
+        float minDist = FLT_MAX ; // recuperation de l'image la plus proche
         std::string imageOpti ;
         for(size_t i = 0 ; i<nbImages ; i++){
             if(distances[i]<minDist){
@@ -264,49 +264,50 @@ int main(int argc, char *argv[])
     sscanf(argv[3], "%s", name_img_out);
 
     // --------------------------------------------------------------------------------------------
-        if(method_key[0] == 'A'){ // methode 1 -> méthode simple
+    if(method_key[0] == 'A'){ // methode 1 -> méthode simple
 
-            DataFrame df = readLines("list_attr_celeba.txt", 10002);
-            DataFrame dfParametres = readLines("list_landmarks_align_celeba.txt", 10002);
+        DataFrame df = readLines("list_attr_celeba.txt", 10002);
+        DataFrame dfParametres = readLines("list_landmarks_align_celeba.txt", 10002);
 
-            //image jpg que l'on souhaite modifier
-            OCTET *img;
-            int nH, nW, nTaille;
+        // image jpg que l'on souhaite modifier
+        OCTET *img;
+        int nH, nW, nTaille;
 
-            char *nomFichier = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
-            lire_nb_lignes_colonnes_image_ppm(nomFichier, &nH, &nW);
-            nTaille = nH * nW * 3;
-            //VERIFICATION 
-            allocation_tableau(img, OCTET, nTaille);
-            lire_image_ppm(nomFichier, img, nH * nW);
-            ecrire_image_ppm((char *)"test1.ppm", img, nH, nW);
+        char *nomFichier = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
+        lire_nb_lignes_colonnes_image_ppm(nomFichier, &nH, &nW);
+        nTaille = nH * nW * 3;
+        // VERIFICATION 
+        allocation_tableau(img, OCTET, nTaille);
+        lire_image_ppm(nomFichier, img, nH * nW);
+        ecrire_image_ppm((char *)"test1.ppm", img, nH, nW);
 
-            //valeur suivant le genre et le nom de l'image
-            int valeur = valeurSelonImage(df, std::string(name_img_1), "Male");
-            //on veut les images de genre opposé
-            std::vector<std::string> imgs = imagesParLabel(df, "Male", -valeur);
-            //position des elements du visage sur l'image d'entree
-            std::vector<std::string> parametres = parametresImage(dfParametres, std::string(name_img_1));
-            //images proches suivant ces paramtres
-            std::vector<std::string> imgProches = imagesProches(dfParametres, imgs, parametres);
-            int nHres, nWres, nTailleRes ;
-            //on teste si ça colle
-            char *nomFichierRes = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
-            lire_nb_lignes_colonnes_image_ppm(nomFichierRes, &nHres, &nWres);
-            nTailleRes = nH * nW * 3;
-            OCTET *imgOut ;
-            allocation_tableau(imgOut, OCTET, nTailleRes);
-            lire_image_ppm(nomFichierRes, imgOut, nHres * nWres);
-            ecrire_image_ppm(name_img_out, imgOut, nHres, nWres);
+        // valeur suivant le genre et le nom de l'image
+        int valeur = valeurSelonImage(df, std::string(name_img_1), "Male");
+        // on veut les images de genre opposé
+        std::vector<std::string> imgs = imagesParLabel(df, "Male", -valeur);
+        // position des elements du visage sur l'image d'entree
+        std::vector<std::string> parametres = parametresImage(dfParametres, std::string(name_img_1));
+        // images proches suivant ces paramtres
+        std::vector<std::string> imgProches = imagesProches(dfParametres, imgs, parametres);
+        int nHres, nWres, nTailleRes ;
 
-            free(img);
-            free(imgOut)
+        // on teste si ça colle en l'affichant
+        char *nomFichierRes = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
+        lire_nb_lignes_colonnes_image_ppm(nomFichierRes, &nHres, &nWres);
+        nTailleRes = nH * nW * 3;
+        OCTET *imgOut ;
+        allocation_tableau(imgOut, OCTET, nTailleRes);
+        lire_image_ppm(nomFichierRes, imgOut, nHres * nWres);
+        ecrire_image_ppm(name_img_out, imgOut, nHres, nWres);
 
-        }
+        free(img);
+        free(imgOut);
+
+    }
     // --------------------------------------------------------------------------------------------
-        else{
-           printf("first argument is incorrect \n");
-        }
+    else{
+       printf("first argument is incorrect \n");
+    }
 
     return 1;
 }
