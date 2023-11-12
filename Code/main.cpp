@@ -319,14 +319,10 @@ void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img, 
     int y_center = std::floor((y_center_eyes + y_center_mouth) / 2);
     int b = std::floor(std::abs(y_center_mouth - y_center_eyes) * 1.3); // hauteur ovale
 
-
-    std::cout << "y_center_eyes: " << y_center_eyes << std::endl;
-    std::cout << "y_center_mouth: " << y_center_mouth << std::endl;
-    std::cout << "a: " << a << std::endl;
+    /*std::cout << "a: " << a << std::endl;
     std::cout << "b: " << b << std::endl;
     std::cout << "x_center: " << x_center << std::endl;
-    std::cout << "y_center: " << y_center << std::endl;
-
+    std::cout << "y_center: " << y_center << std::endl;*/
 
     for(unsigned int i = 0; i < nH*nW; i++){
         // get x and y of image
