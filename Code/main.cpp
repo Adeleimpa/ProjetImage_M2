@@ -248,12 +248,9 @@ int main(int argc, char *argv[])
 
         // -----------------Lecture de l'image d'entrée-------------------------------
         Image image_entree;
-        //OCTET *img;
-        //int nH, nW, nTaille;
         image_entree.name_ppm = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
         lire_nb_lignes_colonnes_image_ppm(image_entree.name_ppm, &image_entree.nH, &image_entree.nW);
         image_entree.calculTailles();
-        //nTaille = nH * nW * 3;
         image_entree.index_img = getIndexFromImgName(name_img_1);
         // On re-génère l'image d'entrée pour pouvoir la visualiser facilement
         allocation_tableau(image_entree.data, OCTET, image_entree.nTaille3);
@@ -275,7 +272,10 @@ int main(int argc, char *argv[])
         std::vector<std::string> images_opposees = imagesParLabel(df, "Male", -valeur);
 
         // filtrer selon critères
-        std::vector<std::string> criteres = {"Arched_Eyebrows", "Attractive", "Bags_Under_Eyes", "Big_Lips", "Big_Nose", "Black_Hair", "Blond_Hair", "Brown_Hair", "Bushy_Eyebrows", "Chubby", "Double_Chin", "Eyeglasses", "Gray_Hair", "Heavy_Makeup", "High_Cheekbones", "Mouth_Slightly_Open", "Narrow_Eyes", "Oval_Face", "Pale_Skin", "Pointy_Nose", "Receding_Hairline", "Rosy_Cheeks", "Smiling", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat", "Young"};
+        std::vector<std::string> criteres = {"Eyeglasses", "Smiling", "Oval_Face", "Mouth_Slightly_Open", "Narrow_Eyes", "Chubby", 
+        "Double_Chin", "Bushy_Eyebrows", "Arched_Eyebrows", "Bags_Under_Eyes", "Big_Lips", "Big_Nose", "Pointy_Nose",
+        "Attractive", "Black_Hair", "Blond_Hair", "Brown_Hair", "Gray_Hair", "Heavy_Makeup", "High_Cheekbones", "Pale_Skin", 
+        "Receding_Hairline", "Rosy_Cheeks", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat"};
         std::vector<std::string> imagesPossibles = imagesPossiblesSelonParametres(df, name_img_1, criteres, images_opposees);
 
         // position des elements du visage sur l'image d'entree
