@@ -9,6 +9,7 @@
 #include <regex>
 #include <cmath>
 #include "DataFrame.h"
+#include "Image.h"
 
 
 // retrouve le nom .pgm du fichier correspondant au fichier .jpg 
@@ -271,62 +272,80 @@ int main(int argc, char *argv[])
         // --------Créer dataframes (attributs des images de la base de données)--------
         DataFrame df;
         df.readLines("list_attr_celeba.txt", 10002);
-        df.printDataFrame();
+        //df.printDataFrame();
         DataFrame dfParametres; 
         dfParametres.readLines("list_landmarks_align_celeba.txt", 10002);
-        dfParametres.printDataFrame();
+        //dfParametres.printDataFrame();
         // ----------------------------------------------------------------------------
 
-        // image jpg que l'on souhaite modifier
-        OCTET *img;
-        int nH, nW, nTaille;
 
-        char *nomFichier = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
-        lire_nb_lignes_colonnes_image_ppm(nomFichier, &nH, &nW);
-        nTaille = nH * nW * 3;
-        int index_img = getIndexFromImgName(name_img_1);
-        // VERIFICATION 
-        allocation_tableau(img, OCTET, nTaille);
-        lire_image_ppm(nomFichier, img, nH * nW);
+        // -----------------Lecture de l'image d'entrée-------------------------------
+        Image image_entree;
+        //OCTET *img;
+        //int nH, nW, nTaille;
+        image_entree.name_ppm = nomImageCorrespondante(name_img_1, (char *)"ppm", (char *)"./basePPM/");
+        lire_nb_lignes_colonnes_image_ppm(image_entree.name_ppm, &image_entree.nH, &image_entree.nW);
+        image_entree.calculTailles();
+        //nTaille = nH * nW * 3;
+        image_entree.index_img = getIndexFromImgName(name_img_1);
+        // On re-génère l'image d'entrée pour pouvoir la visualiser facilement
+        allocation_tableau(image_entree.data, OCTET, image_entree.nTaille3);
+        lire_image_ppm(image_entree.name_ppm, image_entree.data, image_entree.nTaille);
         char nomFichierTest[250];
-        sprintf(nomFichierTest, "%d_image_originale.ppm", index_img);
-        ecrire_image_ppm(nomFichierTest, img, nH, nW);
+        sprintf(nomFichierTest, "%d_image_originale.ppm", image_entree.index_img);
+        ecrire_image_ppm(nomFichierTest, image_entree.data, image_entree.nH, image_entree.nW);
+        // ----------------------------------------------------------------------------
 
+
+        // ----------------------------------------------------------------------------
+        // Trouver les images de genre opposé
+        // Les filtrer selon certains critères
+        // Trouver les images les plus proches (en terme de positions des yeux, nez et bouche)
+        // ----------------------------------------------------------------------------
         // valeur suivant le genre et le nom de l'image
-        int index_img1 = getIndexFromImgName(name_img_1);
-        int valeur = df.getValue(index_img1, "Male");
+        int valeur = df.getValue(image_entree.index_img, "Male");
         // on veut les images de genre opposé
-        std::vector<std::string> imgs = imagesParLabel(df, "Male", -valeur);
+        std::vector<std::string> images_opposees = imagesParLabel(df, "Male", -valeur);
 
         // filtrer selon critères
         std::vector<std::string> criteres = {"Arched_Eyebrows", "Attractive", "Bags_Under_Eyes", "Big_Lips", "Big_Nose", "Black_Hair", "Blond_Hair", "Brown_Hair", "Bushy_Eyebrows", "Chubby", "Double_Chin", "Eyeglasses", "Gray_Hair", "Heavy_Makeup", "High_Cheekbones", "Mouth_Slightly_Open", "Narrow_Eyes", "Oval_Face", "Pale_Skin", "Pointy_Nose", "Receding_Hairline", "Rosy_Cheeks", "Smiling", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat", "Young"};
-        std::vector<std::string> imagesPossibles = imagesPossiblesSelonParametres(df, name_img_1, criteres, imgs);
+        std::vector<std::string> imagesPossibles = imagesPossiblesSelonParametres(df, name_img_1, criteres, images_opposees);
 
         // position des elements du visage sur l'image d'entree
-        std::vector<std::string> parametres = dfParametres.getRang(index_img1);
+        std::vector<std::string> parametres = dfParametres.getRang(image_entree.index_img);
 
-        // images proches suivant ces paramtres
+        // images proches suivant ces parametres
         std::vector<std::string> imgProches = imagesProches(dfParametres, imagesPossibles, parametres);
-        int nHres, nWres, nTailleRes ;
+        // ----------------------------------------------------------------------------
+        
 
-        // on teste si ça colle en l'affichant
-        char *nomFichierRes = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
-        lire_nb_lignes_colonnes_image_ppm(nomFichierRes, &nHres, &nWres);
-        nTailleRes = nH * nW * 3;
-        OCTET *imgOut ;
-        allocation_tableau(imgOut, OCTET, nTailleRes);
-        lire_image_ppm(nomFichierRes, imgOut, nHres * nWres);
-        ecrire_image_ppm(name_img_out, imgOut, nHres, nWres);
+        
+         // -----------------Lecture de l'image opposée-------------------------------
+        Image image_opposee;
+        image_opposee.name_ppm = nomImageCorrespondante(imgProches[0].c_str(), (char *)"ppm", (char *)"./basePPM/");
+        lire_nb_lignes_colonnes_image_ppm(image_opposee.name_ppm, &image_opposee.nH, &image_opposee.nW);
+        image_opposee.calculTailles();
+        allocation_tableau(image_opposee.data, OCTET, image_opposee.nTaille3);
+        lire_image_ppm(image_opposee.name_ppm, image_opposee.data, image_opposee.nTaille);
+        ecrire_image_ppm(name_img_out, image_opposee.data, image_opposee.nH, image_opposee.nW);
+        // ----------------------------------------------------------------------------
 
-        // swap les visages
-        OCTET *imgSwap ;
-        allocation_tableau(imgSwap, OCTET, nTailleRes); // en supposant les images ppm ont la meme taille
-        swapVisages(imgSwap, dfParametres.data[index_img], img, imgOut, nHres, nWres);
-        ecrire_image_ppm(name_img_swap, imgSwap, nHres, nWres);
 
-        free(img);
-        free(imgOut);
-        free(imgSwap);
+        // -----------------swap les visages-------------------------------
+        Image image_swap;
+        // /!\ en supposant les images ppm ont la meme taille
+        image_swap.nH = image_opposee.nH;
+        image_swap.nW = image_opposee.nW;
+        image_swap.calculTailles();
+        allocation_tableau(image_swap.data, OCTET, image_swap.nTaille3);
+        swapVisages(image_swap.data, dfParametres.data[image_entree.index_img], image_entree.data, image_opposee.data, image_swap.nH, image_swap.nW);
+        ecrire_image_ppm(name_img_swap, image_swap.data, image_swap.nH, image_swap.nW);
+        // ----------------------------------------------------------------------------
+
+        // cleaning
+        free(image_entree.data);
+        free(image_opposee.data);
+        free(image_swap.data);
 
     }
     // --------------------------------------------------------------------------------------------
