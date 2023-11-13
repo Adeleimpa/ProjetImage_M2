@@ -10,6 +10,7 @@
 #include <cmath>
 #include "DataFrame.h"
 #include "Image.h"
+#include "Face.h"
 
 
 // retrouve le nom .pgm du fichier correspondant au fichier .jpg 
@@ -140,50 +141,16 @@ int getIndexFromImgName(const char* filename){
     return imageNumber;
 }
 
-void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img, OCTET *img2, int nH, int nW){
+void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img_entree, OCTET *img_opposee, int nH, int nW){
 
-    // data of image 1
-    int x_lefteye = std::stoi(df_data[1]);
-    int y_lefteye = std::stoi(df_data[2]);
-    int x_righteye = std::stoi(df_data[3]);
-    int y_righteye = std::stoi(df_data[4]);
-    int x_nose = std::stoi(df_data[5]);
-    int y_nose = std::stoi(df_data[6]);
-    int x_leftmouth = std::stoi(df_data[7]);
-    int y_leftmouth = std::stoi(df_data[8]);
-    int x_rightmouth = std::stoi(df_data[9]);
-    int y_rightmouth = std::stoi(df_data[10]);
+    Face face_entree = setFaceCaracteristics(df_data);
 
-    // trouver centre de l'ovale de découpe
-    int x_dist_eyes = x_righteye - x_lefteye;
-    int a = std::floor(x_dist_eyes * 1.); // largeur ovale
+    int a = getA(face_entree); // largeur ovale
+    int b = getB(face_entree); // hauteur ovale
 
-    int x_center_eyes = x_lefteye + std::floor(x_dist_eyes/2);
-    int x_dist_mouth = x_rightmouth - x_leftmouth;
-    int x_center_mouth = x_leftmouth + std::floor(x_dist_mouth/2);
-    int x_center = std::floor((x_center_eyes + x_center_mouth) / 2);
-
-    int y_dist_eyes;
-    int y_center_eyes;
-    if(y_righteye > y_lefteye){
-        y_dist_eyes = y_righteye - y_lefteye;
-        y_center_eyes = y_lefteye + std::floor(y_dist_eyes/2);
-    }else{
-        y_dist_eyes = y_lefteye - y_righteye;
-        y_center_eyes = y_righteye + std::floor(y_dist_eyes/2);
-    }
-    int y_dist_mouth;
-    int y_center_mouth;
-    if(y_rightmouth > y_leftmouth){
-        y_dist_mouth = y_rightmouth - y_leftmouth;
-        y_center_mouth = y_leftmouth + std::floor(y_dist_mouth/2);
-    }else{
-        y_dist_mouth = y_leftmouth - y_rightmouth;
-        y_center_mouth = y_rightmouth + std::floor(y_dist_mouth/2);
-    }
-
-    int y_center = std::floor((y_center_eyes + y_center_mouth) / 2);
-    int b = std::floor(std::abs(y_center_mouth - y_center_eyes) * 1.3); // hauteur ovale
+    // centre ovale
+    int x_center = getXCenter(face_entree);
+    int y_center = getYCenter(face_entree);
 
     /*std::cout << "a: " << a << std::endl;
     std::cout << "b: " << b << std::endl;
@@ -198,13 +165,13 @@ void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img, 
         // check if x y is in ovale (formula)
         if( (pow(x-x_center,2) / pow(a,2)) +   (pow(y-y_center,2) / pow(b,2)) <= 1.){
             // if yes -> imgSwap fileld with img2
-            imgSwap[3*i] = img2[3*i];
-            imgSwap[3*i+1] = img2[3*i+1];
-            imgSwap[3*i+2] = img2[3*i+2];
+            imgSwap[3*i] = img_opposee[3*i];
+            imgSwap[3*i+1] = img_opposee[3*i+1];
+            imgSwap[3*i+2] = img_opposee[3*i+2];
         } else{
-            imgSwap[3*i] = img[3*i];
-            imgSwap[3*i+1] = img[3*i+1];
-            imgSwap[3*i+2] = img[3*i+2];
+            imgSwap[3*i] = img_entree[3*i];
+            imgSwap[3*i+1] = img_entree[3*i+1];
+            imgSwap[3*i+2] = img_entree[3*i+2];
         }
     }
 
@@ -317,7 +284,7 @@ int main(int argc, char *argv[])
         // images proches suivant ces parametres
         std::vector<std::string> imgProches = imagesProches(dfParametres, imagesPossibles, parametres);
         // ----------------------------------------------------------------------------
-        
+
 
         
          // -----------------Lecture de l'image opposée-------------------------------
