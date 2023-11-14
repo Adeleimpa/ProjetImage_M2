@@ -122,7 +122,8 @@ std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> im
     return meilleuresImages ;
 }
 
-int getIndexFromImgName(const char* filename){
+int getIndexFromImgName(const char *filename)
+{
     // Convertit le nom de fichier en une chaîne de caractères
     std::string strFilename(filename);
 
@@ -137,11 +138,11 @@ int getIndexFromImgName(const char* filename){
 
     // Convertit la sous-chaîne en entier
     int imageNumber = std::stoi(numberStr);
-
-    return imageNumber;
+    return imageNumber - 1;
 }
 
-void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img_entree, OCTET *img_opposee, int nH, int nW){
+void swapVisages(OCTET *imgSwap, std::vector<std::string> df_data, OCTET *img_entree, OCTET *img_opposee, int nH, int nW)
+{
 
     Face face_entree = setFaceCaracteristics(df_data);
 
@@ -156,25 +157,206 @@ void swapVisages(OCTET * imgSwap, std::vector<std::string> df_data, OCTET *img_e
     std::cout << "b: " << b << std::endl;
     std::cout << "x_center: " << x_center << std::endl;
     std::cout << "y_center: " << y_center << std::endl;*/
+    
+    double *occRougeOrigine;
+    double *occVertOrigine;
+    double *occBleuOrigine;
+    allocation_tableau(occRougeOrigine, double, 256);
+    allocation_tableau(occVertOrigine, double, 256);
+    allocation_tableau(occBleuOrigine, double, 256);
 
-    for(unsigned int i = 0; i < nH*nW; i++){
+    double *ddpRougeOrigine;
+    double *ddpVertOrigine;
+    double *ddpBleuOrigine;
+    allocation_tableau(ddpRougeOrigine, double, 256);
+    allocation_tableau(ddpVertOrigine, double, 256);
+    allocation_tableau(ddpBleuOrigine, double, 256);
+
+    double *ddpRougeOppose;
+    double *ddpVertOppose;
+    double *ddpBleuOppose;
+    allocation_tableau(ddpRougeOppose, double, 256);
+    allocation_tableau(ddpVertOppose, double, 256);
+    allocation_tableau(ddpBleuOppose, double, 256);
+
+    int cpt = 0;
+    for (unsigned int i = 0; i < nH * nW; i++)
+    {
         // get x and y of image
         int x = i % nW;
         int y = std::floor(i / nW);
 
         // check if x y is in ovale (formula)
-        if( (pow(x-x_center,2) / pow(a,2)) +   (pow(y-y_center,2) / pow(b,2)) <= 1.){
+        //occurence des composantes RGB (histogramme)
+        if ((pow(x - x_center, 2) / pow(a, 2)) + (pow(y - y_center, 2) / pow(b, 2)) <= 1.)
+        {
+            ddpRougeOrigine[img_entree[3 * i]] += 1;
+            ddpVertOrigine[img_entree[3 * i + 1]] += 1;
+            ddpBleuOrigine[img_entree[3 * i + 2]] += 1;
+
+            ddpRougeOppose[img_opposee[3 * i]] += 1;
+            ddpVertOppose[img_opposee[3 * i + 1]] += 1;
+            ddpBleuOppose[img_opposee[3 * i + 2]] += 1;
+            cpt++;
+        } 
+    }
+    //ddp
+    for (int i = 0; i < 256; i++)
+    {
+        ddpRougeOrigine[i] = ddpRougeOrigine[i] / (cpt);
+        ddpVertOrigine[i] = ddpVertOrigine[i] / (cpt);
+        ddpBleuOrigine[i] = ddpBleuOrigine[i] / (cpt);
+
+        ddpRougeOppose[i] = ddpRougeOppose[i] / (cpt);
+        ddpVertOppose[i] = ddpVertOppose[i] / (cpt);
+        ddpBleuOppose[i] = ddpBleuOppose[i] / (cpt);
+    }
+    //fonction de repartition
+    for (int i = 1; i < 256; i++)
+    {
+        ddpRougeOrigine[i] = ddpRougeOrigine[i] + ddpRougeOrigine[i - 1];
+        ddpVertOrigine[i] = ddpVertOrigine[i] + ddpVertOrigine[i - 1];
+        ddpBleuOrigine[i] = ddpBleuOrigine[i] + ddpBleuOrigine[i - 1];
+
+        ddpRougeOppose[i] = ddpRougeOppose[i] + ddpRougeOppose[i - 1];
+        ddpVertOppose[i] = ddpVertOppose[i] + ddpVertOppose[i - 1];
+        ddpBleuOppose[i] = ddpBleuOppose[i] + ddpBleuOppose[i - 1];
+    }
+    //egalisation d'histogramme
+    for (unsigned int i = 0; i < nH * nW; i++)
+    {
+        // get x and y of image
+        int x = i % nW;
+        int y = std::floor(i / nW);
+
+        // check if x y is in ovale (formula)
+        if ((pow(x - x_center, 2) / pow(a, 2)) + (pow(y - y_center, 2) / pow(b, 2)) <= 1.)
+        {
             // if yes -> imgSwap fileld with img2
-            imgSwap[3*i] = img_opposee[3*i];
-            imgSwap[3*i+1] = img_opposee[3*i+1];
-            imgSwap[3*i+2] = img_opposee[3*i+2];
-        } else{
-            imgSwap[3*i] = img_entree[3*i];
-            imgSwap[3*i+1] = img_entree[3*i+1];
-            imgSwap[3*i+2] = img_entree[3*i+2];
+            img_opposee[3 * i] = ddpRougeOppose[img_opposee[3 * i]] * 255;
+            img_opposee[3 * i + 1] = ddpVertOppose[img_opposee[3 * i + 1]] * 255;
+            img_opposee[3 * i + 2] = ddpBleuOppose[img_opposee[3 * i + 2]] * 255;
         }
     }
 
+    double ftR, ftV, ftB;
+    int indR, indV, indB;
+    bool trouveR, trouveV, trouveB;
+    double valR, valV, valB;
+
+    //specification d'histogramme
+    for (unsigned int i = 0; i < nH * nW; i++)
+    {
+        int x = i % nW;
+        int y = std::floor(i / nW);
+
+        // check if x y is in ovale (formula)
+        if ((pow(x - x_center, 2) / pow(a, 2)) + (pow(y - y_center, 2) / pow(b, 2)) <= 1.)
+        {
+            ftR = (double)img_opposee[3 * i] / 255;
+            ftV = (double)img_opposee[3 * i + 1] / 255;
+            ftB = (double)img_opposee[3 * i + 2] / 255;
+            indR = 1;
+            indV = 1;
+            indB = 1;
+            trouveR = false;
+            trouveV = false;
+            trouveB = false;
+            while (trouveR == false && indR < 256)
+            {
+                // std::cout<<fR[indR]<<" ; "<<ftR<<std::endl ;
+                if (ddpRougeOrigine[indR] > ftR)
+                {
+
+                    trouveR = true;
+                    valR = plusProche(ftR, ddpRougeOrigine[indR - 1], ddpRougeOrigine[indR]);
+                    if (valR == ddpRougeOrigine[indR - 1])
+                    {
+                        img_opposee[3*i] = indR - 1;
+                        break;
+                    }
+                    else
+                    {
+                        img_opposee[3*i] = indR;
+                        break;
+                    }
+                    //std::cout << "trouve ! R : " << (int)imgOut[3 * (i * nW + j)] << std::endl;
+                }
+                else
+                {
+                    indR++;
+                }
+            }
+
+            while (trouveV == false && indV < 256)
+            {
+                // std::cout<<indV<<std::endl ;
+                if (ddpVertOrigine[indV] > ftV)
+                {
+                    trouveV = true;
+                    valV = plusProche(ftV, ddpVertOrigine[indV - 1], ddpVertOrigine[indV]);
+                    if (valV == ddpVertOrigine[indV - 1])
+                    {
+                        img_opposee[3 * i + 1] = indV - 1;
+                    }
+                    else
+                    {
+                        img_opposee[3 * i + 1] = indV;
+                        // break;
+                    }
+                    //std::cout << "trouve ! V : " << (int)imgOut[3 * (i * nW + j) + 1] << std::endl;
+                }
+                else
+                {
+                    indV++;
+                }
+            }
+            while (trouveB == false && indB < 256)
+            {
+                if (ddpBleuOrigine[indB] > ftB)
+                {
+                    trouveB = true;
+                    valB = plusProche(ftB, ddpBleuOrigine[indB - 1], ddpBleuOrigine[indB]);
+                    if (valB == ddpBleuOrigine[indB - 1])
+                    {
+                        img_opposee[3 * i + 2] = indB - 1;
+                    }
+                    else
+                    {
+                        img_opposee[3 * i + 2] = indB;
+
+                        // break;
+                    }
+                }
+                else
+                {
+                    indB++;
+                }
+                //std::cout << "trouve ! B : " << (int)imgOut[3 * (i * nW + j) + 2] << std::endl;
+            }
+        }
+    }
+    for (unsigned int i = 0; i < nH * nW; i++)
+    {
+        // get x and y of image
+        int x = i % nW;
+        int y = std::floor(i / nW);
+
+        // check if x y is in ovale (formula)
+        if ((pow(x - x_center, 2) / pow(a, 2)) + (pow(y - y_center, 2) / pow(b, 2)) <= 1.)
+        {
+            // if yes -> imgSwap fileld with img2
+            imgSwap[3 * i] = img_opposee[3 * i];
+            imgSwap[3 * i + 1] = img_opposee[3 * i + 1];
+            imgSwap[3 * i + 2] = img_opposee[3 * i + 2];
+        }
+        else
+        {
+            imgSwap[3 * i] = img_entree[3 * i];
+            imgSwap[3 * i + 1] = img_entree[3 * i + 1];
+            imgSwap[3 * i + 2] = img_entree[3 * i + 2];
+        }
+    }
 }
 
 std::vector<std::string> intersection(std::vector<std::string> vect1, std::vector<std::string> vect2){
