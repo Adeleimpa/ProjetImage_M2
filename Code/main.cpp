@@ -138,12 +138,95 @@ int getIndexFromImgName(const char *filename)
 
     // Convertit la sous-chaîne en entier
     int imageNumber = std::stoi(numberStr);
-    return imageNumber - 1;
+    return imageNumber;
+}
+
+// nr_neighbors must be odd
+unsigned char averagePixel(int nr_neighbors, OCTET *ImgIn, int i, int j, int nH, int nW){
+    unsigned char pixel_val;
+    int sum = 0;
+    int count = 0;
+
+    int side = floor(nr_neighbors/2);
+
+    for(int x = i - side; x < i + side; x++){
+        for(int y = j - side; y < j + side; y++){
+            if(x >= 0 && x < nH && y >= 0 && y < nW){
+                sum += ImgIn[x*nW +y];
+                count++;
+            }
+        } 
+    }
+
+    double total = (double)sum/(double)count;
+
+    pixel_val = ceil(total);
+
+    return pixel_val;
+}
+
+void floutageContour(OCTET *imgSwap, int a, int b, int x_center, int y_center, int nH, int nW){
+
+    OCTET *imgSwap_copy = imgSwap;
+
+    OCTET *tempR, *tempG, *tempB;
+    allocation_tableau(tempR, OCTET, nH*nW);
+    allocation_tableau(tempG, OCTET, nH*nW);
+    allocation_tableau(tempB, OCTET, nH*nW);
+
+    OCTET *imgSwap_copyR, *imgSwap_copyG, *imgSwap_copyB;
+    allocation_tableau(imgSwap_copyR, OCTET, nH*nW);
+    allocation_tableau(imgSwap_copyG, OCTET, nH*nW);
+    allocation_tableau(imgSwap_copyB, OCTET, nH*nW);
+
+    planR(imgSwap_copyR, imgSwap_copy, nH*nW);
+    planV(imgSwap_copyG, imgSwap_copy, nH*nW);
+    planB(imgSwap_copyB, imgSwap_copy, nH*nW);
+
+    int index = 0;
+    for(int i = 0; i < nH; i++){
+        for(int j = 0; j < nW; j++){
+
+            // get x and y of image
+            int x = index % nW;
+            int y = std::floor(index / nW);
+
+            // check if x y is in ovale (formula)
+            if ( abs( (pow(x - x_center, 2) / pow(a, 2)) + (pow(y - y_center, 2) / pow(b, 2)) -1.) <= 0.1)
+            {
+                tempR[i*nW + j] = averagePixel(5, imgSwap_copyR, i, j, nH, nW);
+                tempG[i*nW + j] = averagePixel(5, imgSwap_copyG, i, j, nH, nW);
+                tempB[i*nW + j] = averagePixel(5, imgSwap_copyB, i, j, nH, nW);
+            }
+            else
+            {
+                tempR[i*nW + j] = imgSwap_copyR[i*nW + j];
+                tempG[i*nW + j] = imgSwap_copyG[i*nW + j];
+                tempB[i*nW + j] = imgSwap_copyB[i*nW + j];
+            }
+
+            index++;
+        }
+    }
+
+    int j = 0;
+    for(int i = 0; i < nH*nW*3; i+=3){
+        imgSwap[i] = tempR[j];
+        imgSwap[i+1] = tempG[j];
+        imgSwap[i+2] = tempB[j];
+        j++;
+    }
+    
+}
+
+double plusProche(double valObjectif, double val0, double val1)
+{
+    if (abs(valObjectif - val0) < abs(valObjectif - val1)){ return val0;
+    } else {return val1; }
 }
 
 void swapVisages(OCTET *imgSwap, std::vector<std::string> df_data, OCTET *img_entree, OCTET *img_opposee, int nH, int nW)
 {
-
     Face face_entree = setFaceCaracteristics(df_data);
 
     int a = getA(face_entree); // largeur ovale
@@ -157,7 +240,7 @@ void swapVisages(OCTET *imgSwap, std::vector<std::string> df_data, OCTET *img_en
     std::cout << "b: " << b << std::endl;
     std::cout << "x_center: " << x_center << std::endl;
     std::cout << "y_center: " << y_center << std::endl;*/
-    
+
     double *occRougeOrigine;
     double *occVertOrigine;
     double *occBleuOrigine;
@@ -357,7 +440,10 @@ void swapVisages(OCTET *imgSwap, std::vector<std::string> df_data, OCTET *img_en
             imgSwap[3 * i + 2] = img_entree[3 * i + 2];
         }
     }
+
+    floutageContour(imgSwap, a, b, x_center, y_center, nH, nW);
 }
+
 
 std::vector<std::string> intersection(std::vector<std::string> vect1, std::vector<std::string> vect2){
     size_t tailleVect1 = vect1.size() ;
@@ -454,10 +540,11 @@ int main(int argc, char *argv[])
         std::vector<std::string> images_opposees = imagesParLabel(df, "Male", -valeur);
 
         // filtrer selon critères
-        std::vector<std::string> criteres = {"Eyeglasses", "Smiling", "Oval_Face", "Mouth_Slightly_Open", "Narrow_Eyes", "Chubby", 
+        std::vector<std::string> criteres = {"Arched_Eyebrows", "Attractive", "Bags_Under_Eyes", "Big_Lips", "Big_Nose", "Black_Hair", "Blond_Hair", "Brown_Hair", "Bushy_Eyebrows", "Chubby", "Double_Chin", "Eyeglasses", "Gray_Hair", "Heavy_Makeup", "High_Cheekbones", "Mouth_Slightly_Open", "Narrow_Eyes", "Oval_Face", "Pale_Skin", "Pointy_Nose", "Receding_Hairline", "Rosy_Cheeks", "Smiling", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat", "Young"};
+        /*std::vector<std::string> criteres = {"Eyeglasses", "Smiling", "Oval_Face", "Mouth_Slightly_Open", "Narrow_Eyes", "Chubby", 
         "Double_Chin", "Bushy_Eyebrows", "Arched_Eyebrows", "Bags_Under_Eyes", "Big_Lips", "Big_Nose", "Pointy_Nose",
         "Attractive", "Black_Hair", "Blond_Hair", "Brown_Hair", "Gray_Hair", "Heavy_Makeup", "High_Cheekbones", "Pale_Skin", 
-        "Receding_Hairline", "Rosy_Cheeks", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat"};
+        "Receding_Hairline", "Rosy_Cheeks", "Straight_Hair", "Wavy_Hair", "Wearing_Earrings", "Wearing_Hat"};*/
         std::vector<std::string> imagesPossibles = imagesPossiblesSelonParametres(df, name_img_1, criteres, images_opposees);
 
         // position des elements du visage sur l'image d'entree
