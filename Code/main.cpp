@@ -75,51 +75,63 @@ std::vector<std::string> imagesParLabel(const DataFrame &df, std::string nomCond
 // df : dataframe des donnees (list_landmarks_align_celeba.txt)
 // imagesPossibles : ensemble des images candidat
 // ensemblesParametre : donnees de l'image de depart (position des yeux, bouche, ...)
-std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> imagesPossibles, std::vector<std::string> ensembleParametres){
-    std::vector<std::string> meilleuresImages ;
+std::vector<std::string> imagesProches(DataFrame df, std::vector<std::string> imagesPossibles, std::vector<std::string> ensembleParametres)
+{
+    std::vector<std::string> meilleuresImages;
 
-    size_t nbImages = imagesPossibles.size() ;
-    size_t tailleDf = df.data.size() ;
+    size_t nbImages = imagesPossibles.size();
+    size_t tailleDf = df.data.size();
     size_t tailleParam = ensembleParametres.size();
 
     std::vector<float> distances(nbImages);
 
-    for(size_t i = 1 ; i<tailleDf ; i++){
-        for(size_t j = 0 ; j<nbImages ; j++){
-            if(df.data[i][0] == imagesPossibles[j]){
-                distances[j] = 0 ;
-                for(size_t k = 1 ; k<tailleParam ; k++){
-                    distances[j] += (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])) * (std::stoi(ensembleParametres[k])-std::stoi(df.data[i][k])); //distance euclidienne
-                    //std::cout<<df.data[i][k]<<std::endl ;
-                    //std::cout<<k<<std::endl ;
+    for (size_t i = 0; i < tailleDf; i++)
+    {
+        for (size_t j = 0; j < nbImages; j++)
+        {
+            if (df.data[i][0] == imagesPossibles[j])
+            {
+                distances[j] = 0;
+                std::cout<<df.data[i][0]<<std::endl ;
+                // std::cout<<"i : "<<i<<std::endl ;
+                for (size_t k = 0; k < tailleParam; k++)
+                {
+                    distances[j] += (std::stoi(ensembleParametres[k]) - std::stoi(df.data[i][k+1])) * (std::stoi(ensembleParametres[k]) - std::stoi(df.data[i][k+1])); // distance euclidienne
+                    //std::cout<<"donnees : "<<std::stoi(ensembleParametres[k])<<" ; "<<std::stoi(df.data[i][k+1])<<std::endl ;
                 }
             }
         }
     }
-    
-    for(size_t i = 0 ; i<nbImages ; i++){
-        if(distances[i] < 10){ //images proches 
+
+    for (size_t i = 0; i < nbImages; i++)
+    {
+        if (distances[i] < 5)
+        { // images proches
             meilleuresImages.push_back(imagesPossibles[i]);
         }
     }
-    int indice ;
-    if(!meilleuresImages.empty()){
-        indice = rand() % meilleuresImages.size() ;
+    int indice;
+    if (!meilleuresImages.empty())
+    {
+        indice = rand() % meilleuresImages.size();
         meilleuresImages = {meilleuresImages[indice]}; // On selectionne une image parmi les images proches
-    } 
-    else{ // s'il n'y a aucune image proche
-        float minDist = FLT_MAX ; // recuperation de l'image la plus proche
-        std::string imageOpti ;
-        for(size_t i = 0 ; i<nbImages ; i++){
-            if(distances[i]<minDist){
-                minDist = distances[i] ;
-                imageOpti = imagesPossibles[i] ;
+    }
+    else
+    {                            // s'il n'y a aucune image proche
+        float minDist = FLT_MAX; // recuperation de l'image la plus proche
+        std::string imageOpti;
+        for (size_t i = 0; i < nbImages; i++)
+        {
+            if (distances[i] < minDist)
+            {
+                minDist = distances[i];
+                imageOpti = imagesPossibles[i];
             }
         }
-        meilleuresImages = {imageOpti} ;
+        meilleuresImages = {imageOpti};
     }
-    
-    return meilleuresImages ;
+
+    return meilleuresImages;
 }
 
 int getIndexFromImgName(const char *filename)
@@ -133,11 +145,18 @@ int getIndexFromImgName(const char *filename)
     // Obtient la position du point avant l'extension
     size_t end = strFilename.find_last_of('.');
 
-    // Extrait la sous-chaîne contenant le numéro de l'image
-    std::string numberStr = strFilename.substr(start, end - start);
+    int imageNumber;
 
-    // Convertit la sous-chaîne en entier
-    int imageNumber = std::stoi(numberStr);
+    if(start == end){
+        imageNumber = 0;
+    }else{
+        // Extrait la sous-chaîne contenant le numéro de l'image
+        std::string numberStr = strFilename.substr(start, end - start);
+
+        // Convertit la sous-chaîne en entier
+        imageNumber = std::stoi(numberStr);
+    }
+
     return imageNumber;
 }
 
