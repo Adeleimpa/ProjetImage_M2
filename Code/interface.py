@@ -8,14 +8,13 @@ import cv2
 import os
 from skimage.metrics import structural_similarity as ssim
 import imageio.v2 as imageio
+import numpy as np
 
 
 global filepath
 filepath = ""
 
-def setFilepath(valeur):
-    global filepath
-    filepath = valeur
+
 
 def lire_image(chemin_image):
     # Charger l'image
@@ -36,6 +35,7 @@ def lire_image(chemin_image):
 
     return image
 
+#Autoriser l'édition d'image
 def alert():
     global fenetre_alerte, label_alerte, bouton_ok
     fenetre_alerte = Toplevel(fenetre)
@@ -169,7 +169,7 @@ def imageProche():
             image_proche_bis = cv2.resize(image_proche, (128,128))
             #if image.shape != image_proche.shape:
                 #image_proche_bis = cv2.resize(image, (image_proche.shape[1], image_proche.shape[0]))
-            print(i)
+            #print(i)
             # Comparer les images en utilisant la SSIM
             score_ssim = ssim(image_bis, image_proche_bis, channel_axis=2)
             if score_ssim > score_opt :
@@ -370,13 +370,14 @@ def creer_gif(chemin_dossier, nom_gif):
     # Liste les fichiers dans le dossier
     fichiers_images = [f for f in os.listdir(chemin_dossier) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
     fichiers_images.sort()
-    
     for fichier_image in fichiers_images:
         chemin_image = os.path.join(chemin_dossier, fichier_image)
         image_pil = Image.open(chemin_image)
+        newWidth = 1024
+        newHeight = 1024
+        image_pil = image_pil.resize((newWidth,newHeight))
         images.append(ImageTk.PhotoImage(image_pil))
-        images_gif.append(imageio.imread(chemin_image))
-
+        images_gif.append(imageio.np.array(image_pil))
     # Créer un widget Canvas pour afficher le GIF
     canvas_gif = Canvas(fenetre_gif, width=images[0].width(), height=images[0].height())
     canvas_gif.pack()
@@ -388,10 +389,8 @@ def creer_gif(chemin_dossier, nom_gif):
         fenetre_gif.update()
         index_suivant = (index + 1) % len(images)
         fenetre_gif.after(100, lambda: afficher_image(index_suivant))
-
     # Lancer la boucle d'affichage
     afficher_image()
-
     # Enregistrer le GIF
     chemin_gif = os.path.join(chemin_dossier, nom_gif)
     imageio.mimsave(chemin_gif, images_gif, fps=10) 
@@ -494,14 +493,5 @@ menubar.add_cascade(label="Aide", menu=menu3)
 
 fenetre.config(menu=menubar)
 
-'''
-filepath = askopenfilename(title="Ouvrir une image",filetypes=[('png files','.png'), ('jpeg files', '.jpg'),('all files','.*')])
-photo = ImageTk.PhotoImage(file=filepath)
-canvas = Canvas(fenetre, width=photo.width(), height=photo.height(), bg="yellow")
-canvas.create_image(0, 0, anchor=NW, image=photo)
-canvas.pack()
-
-lire_image(filepath)
-'''
 
 fenetre.mainloop()
