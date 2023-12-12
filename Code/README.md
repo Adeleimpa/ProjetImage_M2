@@ -21,3 +21,7 @@ python3 swap_gender.py \
     path to images generated \
 ```
 
+You can also run the `interface.py` script
+```bash
+python3 interface.py \
+```
