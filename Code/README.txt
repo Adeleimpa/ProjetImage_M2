@@ -1,4 +1,4 @@
-README
+README Traditional Method
 
 Prepare data
 
